@@ -1,0 +1,122 @@
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type">
+    <title>
+        js调用java
+    </title>
+</head>
+
+<body>
+<p>
+    <xmp id="show">
+    </xmp>
+</p>
+<p>
+    <xmp id="init">
+    </xmp>
+</p>
+<p>
+    <input type="text" id="text1" value=""/>
+</p>
+<p>
+    <input type="text" id="text2" value=""/>
+</p>
+<p>
+    <input type="button" id="enter" value="发消息给Native" onclick="testClick();"
+    />
+</p>
+<p>
+    <input type="button" id="enter1" value="调用Native方法" onclick="testClick1();"
+    />
+</p>
+<p>
+    <input type="button" id="enter2" value="显示html" onclick="testDiv();"/>
+</p>
+<p>
+    <!--type="file"	定义输入字段和 "浏览"按钮，供文件上传。自动浏览系统文件-->
+    <input type="file"/>
+</p>
+</body>
+<script>
+        function testDiv() {
+            document.getElementById("show").innerHTML = document.getElementsByTagName("html")[0].innerHTML;
+        }
+
+        function testClick() {
+            var str1 = document.getElementById("text1").value;
+            var str2 = document.getElementById("text2").value;
+
+            //send message to native  js端跟java端发送消息
+            var data = {'userName':'张三','passWord':'123456'};
+            window.WebViewJavascriptBridge.send(
+                data
+                , function(returnData) {
+                    document.getElementById("show").innerHTML = returnData
+                    console.log("js端发起通信第十五步,至此JS发起回话交互过程结束");
+                }
+            );
+        }
+          //js调java
+        function testClick1() {
+         console.log("####js端和java端注册的handler通信第一步");
+            var str1 = document.getElementById("text1").value;
+            var str2 = document.getElementById("text2").value;
+
+            //call native method
+            /*JS调用java端注册的名为submitFromWeb的*/
+            window.WebViewJavascriptBridge.callHandler(
+            /*回调Java端的名为submitFromWeb的handler的方法*/
+                'submitFromWeb'
+                /*传递参数到Java端*/
+                , {'userName': '张三','passWord':'123456'}
+                , function(responseData) {
+                /*把java端回复的数据显示在页面上*/
+                    document.getElementById("show").innerHTML = responseData
+                    console.log("####(js端和java端注册的handler通信第十七步,至此通信结束)");
+                }
+            );
+        }
+
+        function bridgeLog(logContent) {
+            document.getElementById("show").innerHTML = logContent;
+        }
+
+        function connectWebViewJavascriptBridge(callback) {
+            if (window.WebViewJavascriptBridge) {
+                callback(WebViewJavascriptBridge)
+                 console.log('执行到这里99');
+            } else {
+             console.log('html页面加载初始化执行第一步');
+                document.addEventListener(
+                    'WebViewJavascriptBridgeReady'
+                    , function() {
+                        callback(WebViewJavascriptBridge)
+                    },
+                    false
+                );
+            }
+        }
+//代码走到这里调用了上面的方法
+        connectWebViewJavascriptBridge(function(bridge) {
+            bridge.init(function(message, responseCallback) {
+                var data = {
+                    'Javascript Responds': '测试中文!'
+                };
+                responseCallback(data);
+            });
+
+
+            /*====java调用JS相关代码====这里注册handler供java端调用
+            functionInJs<===>对应function(data, responseCallback)*/
+            bridge.registerHandler("functionInJs", function(data, responseCallback) {
+               console.log("java 调用Js的第八步");
+               console.log(responseCallback);
+                document.getElementById("show").innerHTML = ("java端传递过来的数据: = " + data);
+                var responseData = "收到了java端的数据,我返回了数据";
+                responseCallback(responseData);
+                 console.log("java 调用Js的第十步");
+            });
+        })
+
+</script>
+</html>
